@@ -1,0 +1,16 @@
+services:
+  hcloud-dyndns:
+    build: .
+    container_name: hcloud-dyndns
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - CONFIG=/config/hcloud-dyndns.conf
+      - INTERVAL=300
+      - MODE=loop
+      # optional:
+      # - SCRIPT_FLAGS=--verbose
+      - SCRIPT_FLAGS=--quiet
+    volumes:
+      - ./config:/config:ro

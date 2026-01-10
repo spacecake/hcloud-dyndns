@@ -1,0 +1,3 @@
+# zone host host host...
+example.com example.com www.example.com
+example.net example.net www.example.net

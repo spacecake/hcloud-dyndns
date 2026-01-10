@@ -1,0 +1,3 @@
+config/hcloud-zones.txt
+.env
+.env.local

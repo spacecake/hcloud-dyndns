@@ -34,6 +34,7 @@ API_BASE="${API_BASE:-https://api.hetzner.cloud/v1}"
 COMMENT="${COMMENT:-dyndns}"
 IPV6="${IPV6:-0}"
 BOTH="${BOTH:-0}"
+AUTO_CREATE="${AUTO_CREATE:-0}"
 IPV4_URL="${IPV4_URL:-https://api.ipify.org}"
 IPV6_URL="${IPV6_URL:-https://api64.ipify.org}"
 
@@ -98,6 +99,24 @@ to_rr_name() {
   esac
 }
 
+set_ttl_if_needed() {
+  zone_lc="$1"
+  zone_id="$2"
+  rr_name="$3"
+  rr_type="$4"
+  current_ttl="${5:-}"
+
+  [ -n "${TTL:-}" ] || return 0
+  [ "$current_ttl" = "$TTL" ] && return 0
+
+  api -X POST \
+    -d "{\"ttl\":${TTL}}" \
+    "${API_BASE}/zones/${zone_id}/rrsets/$(rr_path "$rr_name")/${rr_type}/actions/change_ttl" \
+    >/dev/null
+
+  log "TTL" "${zone_lc} ${rr_type} ${rr_name}: ttl -> ${TTL}"
+}
+
 set_rr() {
   zone_lc="$1"
   zone_id="$2"
@@ -105,8 +124,10 @@ set_rr() {
   rr_type="$4"
   new_ip="$5"
 
-  current="$(api "${API_BASE}/zones/${zone_id}/rrsets?name=${rr_name}&type=${rr_type}" \
-    | jq -r '.rrsets[0].records[0].value // empty')"
+rr_json="$(api "${API_BASE}/zones/${zone_id}/rrsets?name=${rr_name}&type=${rr_type}")"
+current="$(printf '%s' "$rr_json" | jq -r '.rrsets[0].records[0].value // empty')"
+current_ttl="$(printf '%s' "$rr_json" | jq -r '.rrsets[0].ttl // empty')"
+
 
   if [ "$current" = "$new_ip" ] && [ -n "$current" ]; then
     if [ "$VERBOSE" = "1" ]; then
@@ -117,10 +138,22 @@ set_rr() {
 
   payload="$(jq -nc --arg ip "$new_ip" --arg c "$COMMENT" '{records:[{value:$ip, comment:$c}]}' )"
 
+  # If missing and AUTO_CREATE=1, create via add_records (auto-creates RRSet)
+  if [ -z "$current" ] && [ "$AUTO_CREATE" = "1" ]; then
+    api -X POST \
+      -d "$payload" \
+      "${API_BASE}/zones/${zone_id}/rrsets/$(rr_path "$rr_name")/${rr_type}/actions/add_records" \
+      >/dev/null
+    set_ttl_if_needed "$zone_lc" "$zone_id" "$rr_name" "$rr_type" ""
+    log "SET" "${zone_lc} ${rr_type} ${rr_name}: -> ${new_ip}"
+    return
+  fi
+
   api -X POST \
     -d "$payload" \
     "${API_BASE}/zones/${zone_id}/rrsets/$(rr_path "$rr_name")/${rr_type}/actions/set_records" \
     >/dev/null
+    set_ttl_if_needed "$zone_lc" "$zone_id" "$rr_name" "$rr_type" "$current_ttl"
 
   if [ -n "$current" ]; then
     log "UPD" "${zone_lc} ${rr_type} ${rr_name}: ${current} -> ${new_ip}"

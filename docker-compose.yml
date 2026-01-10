@@ -9,6 +9,7 @@ services:
       - CONFIG=/config/hcloud-dyndns.conf
       - INTERVAL=300
       - MODE=loop
+      - AUTO_CREATE=1
       # optional:
       # - SCRIPT_FLAGS=--verbose
       - SCRIPT_FLAGS=--quiet

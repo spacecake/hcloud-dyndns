@@ -1,7 +1,9 @@
 services:
   hcloud-dyndns:
-    build: .
-    container_name: hcloud-dyndns
+    build:
+      context: .
+      network: host
+    container_name: hcloud-dyndns-prod
     restart: unless-stopped
     env_file:
       - .env
@@ -13,5 +15,6 @@ services:
       # optional:
       # - SCRIPT_FLAGS=--verbose
       - SCRIPT_FLAGS=--quiet
+    network_mode: host
     volumes:
       - ./config:/config:ro

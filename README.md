@@ -106,6 +106,7 @@ ghcr.io/spacecake/hcloud-dyndns
 ```
 
 Pushes to `main` publish the `main` tag plus a short SHA tag. Version tags such as `v1.2.3` also publish matching semantic version tags.
+The same version tags create GitHub Releases with generated release notes.
 
 Pull the latest image from `main`:
 

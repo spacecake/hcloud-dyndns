@@ -96,6 +96,23 @@ Example verbose run with auto-create and TTL:
 docker compose run --rm -e MODE=once -e SCRIPT_FLAGS=--verbose -e AUTO_CREATE=1 -e TTL=3600 hcloud-dyndns
 ```
 
+
+## Published image
+
+GitHub Actions publishes Docker images to GitHub Container Registry:
+
+```text
+ghcr.io/spacecake/hcloud-dyndns
+```
+
+Pushes to `main` publish the `main` tag plus a short SHA tag. Version tags such as `v1.2.3` also publish matching semantic version tags.
+
+Pull the latest image from `main`:
+
+```bash
+docker pull ghcr.io/spacecake/hcloud-dyndns:main
+```
+
 ## Docker networking note
 
 This deployment uses host networking for both runtime and image builds:

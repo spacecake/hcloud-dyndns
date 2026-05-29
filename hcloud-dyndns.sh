@@ -78,7 +78,7 @@ for t in $RECORD_TYPES; do
 done
 
 rr_path() {
-  [ "$1" = "@" ] && printf '%s' "%40" || printf '%s' "$1"
+  printf '%s' "$1"
 }
 
 to_rr_name() {

@@ -50,15 +50,21 @@ log() {
   echo "[$lvl] $msg"
 }
 
+# Retry transient network failures (DNS timeouts, TLS resets) before giving up
+CURL_OPTS="--connect-timeout 10 --max-time 30 --retry 3 --retry-delay 5 --retry-all-errors"
+
 api() {
-  curl -fsS \
+  # shellcheck disable=SC2086
+  curl -fsS $CURL_OPTS \
     -H "Authorization: Bearer ${API_TOKEN}" \
     -H "Content-Type: application/json" \
     "$@"
 }
 
-get_ip_a()    { curl -fsS "$IPV4_URL"; }
-get_ip_aaaa() { curl -fsS "$IPV6_URL"; }
+# shellcheck disable=SC2086
+get_ip_a()    { curl -fsS $CURL_OPTS "$IPV4_URL"; }
+# shellcheck disable=SC2086
+get_ip_aaaa() { curl -fsS $CURL_OPTS "$IPV6_URL"; }
 
 RECORD_TYPES="A"
 if [ "$BOTH" = "1" ]; then

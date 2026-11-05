@@ -130,12 +130,13 @@ set_rr() {
   rr_type="$4"
   new_ip="$5"
 
-rr_json="$(api "${API_BASE}/zones/${zone_id}/rrsets?name=${rr_name}&type=${rr_type}")"
-current="$(printf '%s' "$rr_json" | jq -r '.rrsets[0].records[0].value // empty')"
-current_ttl="$(printf '%s' "$rr_json" | jq -r '.rrsets[0].ttl // empty')"
-
+  rr_json="$(api "${API_BASE}/zones/${zone_id}/rrsets?name=${rr_name}&type=${rr_type}")"
+  current="$(printf '%s' "$rr_json" | jq -r '.rrsets[0].records[0].value // empty')"
+  current_ttl="$(printf '%s' "$rr_json" | jq -r '.rrsets[0].ttl // empty')"
 
   if [ "$current" = "$new_ip" ] && [ -n "$current" ]; then
+    # IP already correct: still enforce TTL (no-op unless TTL is set and differs)
+    set_ttl_if_needed "$zone_lc" "$zone_id" "$rr_name" "$rr_type" "$current_ttl"
     if [ "$VERBOSE" = "1" ]; then
       log "OK" "${zone_lc} ${rr_type} ${rr_name} already ${new_ip}"
     fi
@@ -150,6 +151,7 @@ current_ttl="$(printf '%s' "$rr_json" | jq -r '.rrsets[0].ttl // empty')"
       -d "$payload" \
       "${API_BASE}/zones/${zone_id}/rrsets/$(rr_path "$rr_name")/${rr_type}/actions/add_records" \
       >/dev/null
+    # new RRset has the zone default TTL (unknown here), so always apply TTL if set
     set_ttl_if_needed "$zone_lc" "$zone_id" "$rr_name" "$rr_type" ""
     log "SET" "${zone_lc} ${rr_type} ${rr_name}: -> ${new_ip}"
     return
@@ -159,7 +161,7 @@ current_ttl="$(printf '%s' "$rr_json" | jq -r '.rrsets[0].ttl // empty')"
     -d "$payload" \
     "${API_BASE}/zones/${zone_id}/rrsets/$(rr_path "$rr_name")/${rr_type}/actions/set_records" \
     >/dev/null
-    set_ttl_if_needed "$zone_lc" "$zone_id" "$rr_name" "$rr_type" "$current_ttl"
+  set_ttl_if_needed "$zone_lc" "$zone_id" "$rr_name" "$rr_type" "$current_ttl"
 
   if [ -n "$current" ]; then
     log "UPD" "${zone_lc} ${rr_type} ${rr_name}: ${current} -> ${new_ip}"
